@@ -3,7 +3,8 @@ import numpy as np
 import json
 import sys
 
-directory = 'C:\\Users\\Caltech University\\Desktop\\spike-thresh\\2022-09-07_14-15-37'
+# directory = 'C:\\Users\\Caltech University\\Desktop\\spike-thresh\\2022-09-07_14-15-37'
+directory = 'C:\\Users\\Caltech University\\Documents\\Open Ephys\\2022-09-30_11-24-36'
 session = Session(directory)
 
 # parse json info
@@ -34,7 +35,7 @@ for ch_idx in range(16):
     ch_mean = means[ch_idx]
     ch_std = stds[ch_idx]
     
-    thr_exceeded_timestamps = np.asarray((np.abs(ch_samples_mv - ch_mean) > 4 * ch_std)).nonzero()[0]
+    thr_exceeded_timestamps = np.asarray(((ch_mean - ch_samples_mv) > 4 * ch_std)).nonzero()[0]
     spike_events = []
     spike_peaks = []
     t_peak = 0
@@ -45,7 +46,10 @@ for ch_idx in range(16):
         spike_events.append(t)
         if ch_samples_mv[t] < ch_samples_mv[t+1]: # assume that spike voltages decrease initially (only record falling stage)
             continue
-        peak_offset = np.min(np.where(np.diff(ch_samples_mv[t:t+1000])>0)[0]) # assumes that a spike does not exceed order of 1000 samples
+        l = np.where(np.diff(ch_samples_mv[t:t+1000])>0)[0]
+        if len(l) == 0:
+            continue
+        peak_offset = np.min(l) # assumes that a spike does not exceed order of 1000 samples
         spike_peaks.append(t+peak_offset)
         t_peak = spike_peaks[-1]
         
@@ -53,5 +57,6 @@ for ch_idx in range(16):
         spike_timestamps.append(t+peak_offset)
 
 # write to disk
-np.save('spike_channels.npy', np.array(spike_channels))
-np.save('spike_timestamps.npy', np.array(spike_timestamps))
+print(directory)
+np.save((directory+'\\spike_channels.npy'), np.array(spike_channels))
+np.save(directory+'\\spike_timestamps.npy', np.array(spike_timestamps))
